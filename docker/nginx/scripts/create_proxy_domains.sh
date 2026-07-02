@@ -8,7 +8,7 @@ NGINX_CONFD_DIR="/etc/nginx/conf.d/"
 echo
 echo "Creating proxy domains script"
 echo "Checking env variables"
-[ -z "${PROXY_DOMAINS}" ] && echo "PROXY_DOMAINS cannot be empty" && exit 1
+[ -z "${PROXY_DOMAINS:-}" ] && echo "PROXY_DOMAINS cannot be empty" && exit 1
 echo "All env data set, proceeding..."
 sleep 1
 
