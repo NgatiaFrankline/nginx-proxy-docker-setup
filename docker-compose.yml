@@ -60,4 +60,5 @@ services:
       start_period: 10s
 networks:
   proxy-network:
+    name: proxy-network
     driver: bridge
