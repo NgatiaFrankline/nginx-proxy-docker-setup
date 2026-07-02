@@ -7,12 +7,7 @@ NGINX_CONFD_DIR="/etc/nginx/conf.d/"
 
 echo
 echo "Creating proxy domains script"
-echo "Checking env variables"
-[ -z "${PROXY_DOMAINS:-}" ] && echo "PROXY_DOMAINS cannot be empty" && exit 1
-echo "All env data set, proceeding..."
-sleep 1
-
-
+echo
 echo "Checking domains template file: ${DOMAIN_TEMPLATE}"
 if [ ! -f "${DOMAIN_TEMPLATE}" ]; then
   echo "OOPS! Template: ${DOMAIN_TEMPLATE} not found"
@@ -49,14 +44,21 @@ _create_domain() {
   sleep 1
 }
 
+if [ -n "${PROXY_DOMAINS}" ]; then
+  IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
+  for entry in "${DOMAINS[@]}"; do
+    entry="${entry//[[:space:]]/}"
+    [ -z "${entry}" ] && continue
+    _create_domain "${entry}"
+  done
+  echo "Done creating proxy domain configs."
+else
+  echo "Ooops!"
+  echo "No domains to create"
+fi
 
-IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
-for entry in "${DOMAINS[@]}"; do
-  entry="${entry//[[:space:]]/}"
-  [ -z "${entry}" ] && continue
-  _create_domain "${entry}"
-done
 
-
+echo
+echo "Adios muchachos...."
 IFS=$'\n\t'
-echo "Done creating proxy domain configs."
+

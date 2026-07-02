@@ -7,7 +7,6 @@ echo
 echo "Creating certificates script"
 echo "Checking env variables"
 [ -z "${SKIP_CERTBOT}" ] && echo "SKIP_CERTBOT cannot be empty" && exit 1
-[ -z "${PROXY_DOMAINS}" ] && echo "PROXY_DOMAINS cannot be empty" && exit 1
 [ -z "${CERTBOT_EMAIL}" ] && echo "CERTBOT_EMAIL cannot be empty" && exit 1
 [ -z "${CERTBOT_STAGING}" ] && echo "CERTBOT_STAGING cannot be empty" && exit 1
 echo "All env data set, proceeding..."
@@ -50,14 +49,19 @@ if [ "${SKIP_CERTBOT}" = "true" ]; then
   echo "Domains certificates will not be configured"
   echo "Skipping...."
 else
-  echo "Configuring domains certificate"
-  IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
-  for entry in "${DOMAINS[@]}"; do
-    entry="${entry//[[:space:]]/}"
-    [ -z "${entry}" ] && continue
-    _create_cert "${entry}"
-  done
-  echo "Done creating certificates."
+  if [ -n "${PROXY_DOMAINS}" ]; then
+    echo "Configuring domains certificate"
+      IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
+      for entry in "${DOMAINS[@]}"; do
+        entry="${entry//[[:space:]]/}"
+        [ -z "${entry}" ] && continue
+        _create_cert "${entry}"
+      done
+      echo "Done creating certificates."
+  else
+    echo "Ooops!"
+    echo "No certificates to create."
+  fi
 fi
 sleep 1
 
