@@ -23,9 +23,10 @@ x-network: &network
   networks:
     - proxy-network
 x-shared-env: &shared-env
+  DEBUG_NGINX_TEMPLATE: ${DEBUG_NGINX_TEMPLATE} # i.e. "true" or "false" (string)
   SKIP_CERTBOT: ${SKIP_CERTBOT} # i.e proxy
   CERTBOT_EMAIL: ${CERTBOT_EMAIL} # i.e. your email
-  CERTBOT_STAGING: ${CERTBOT_STAGING} # i.e. "true" or "false" (string )
+  CERTBOT_STAGING: ${CERTBOT_STAGING} # i.e. "true" or "false" (string)
   PROXY_DOMAINS: ${PROXY_DOMAINS} # i.e. list of domains separated by comma. Exmaple: example.com:container_name:port,www.example.com:container_name:port,test.com:container_name:port,www.test.com:container_name:port
 ---
 services:

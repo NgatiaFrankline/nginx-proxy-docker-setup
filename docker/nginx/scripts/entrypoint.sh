@@ -24,10 +24,14 @@ fi
 source /scripts/create_proxy_domains.sh
 
 
-# add cron to reload nginx at 2am to pick up expired certificates
+echo
+echo "Add cron to reload nginx at 2am to pick up expired certificates"
 echo "0 2 * * * nginx -s reload" | crontab -
 crond -b
+echo "Done!"
+sleep 1
 
-# Go to the container default entrypoint
+
+echo
+echo "Executing container default entrypoint"
 exec "${DEFAULT_ENTRYPOINT}" "$@"
-

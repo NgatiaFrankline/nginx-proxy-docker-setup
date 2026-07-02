@@ -52,18 +52,20 @@ PROXY_NAME=proxy
 CERTBOT_EMAIL=you@example.com
 CERTBOT_STAGING=true
 SKIP_CERTBOT=false
+DEBUG_NGINX_TEMPLATE=false
 PROXY_DOMAINS=example.com:app:3000,www.example.com:app:3000,api.example.com:api:8080
 ```
 
 ### Environment variables
 
-| Variable          | Required | Description                                                                                         |
-|-------------------|----------|-----------------------------------------------------------------------------------------------------|
-| `PROXY_NAME`      | yes      | Suffix appended to container names (`nginx-<name>`, `certbot-<name>`).                              |
-| `CERTBOT_EMAIL`   | yes      | Email address for Let's Encrypt account and expiry notices.                                         |
-| `CERTBOT_STAGING` | yes      | `true` to use the Let's Encrypt staging CA (for testing), `false` for production certificates.      |
-| `SKIP_CERTBOT`    | yes      | `true` to skip certificate issuance entirely (useful when testing Nginx config without DNS set up). |
-| `PROXY_DOMAINS`   | yes      | Comma-separated list of `domain:container_name:port` entries (see below).                           |
+| Variable               | Required | Description                                                                                         |
+|------------------------|----------|-----------------------------------------------------------------------------------------------------|
+| `PROXY_NAME`           | yes      | Suffix appended to container names (`nginx-<name>`, `certbot-<name>`).                              |
+| `CERTBOT_EMAIL`        | yes      | Email address for Let's Encrypt account and expiry notices.                                         |
+| `CERTBOT_STAGING`      | yes      | `true` to use the Let's Encrypt staging CA (for testing), `false` for production certificates.      |
+| `SKIP_CERTBOT`         | yes      | `true` to skip certificate issuance entirely (useful when testing Nginx config without DNS set up). |
+| `DEBUG_NGINX_TEMPLATE` | no       | `true` to print the rendered Nginx config to stdout for each domain after it is generated.          |
+| `PROXY_DOMAINS`        | yes      | Comma-separated list of `domain:container_name:port` entries (see below).                           |
 
 ### `PROXY_DOMAINS` format
 
@@ -111,6 +113,19 @@ sudo rm -rf ./certbot/conf
 # Re-deploy
 docker compose down
 docker compose up -d
+```
+
+### Debug generated Nginx configs
+
+Set `DEBUG_NGINX_TEMPLATE=true` to print each rendered `conf.d/<domain>.conf` to stdout as it is created. Useful for verifying domain, container name, and port substitutions are correct without exec-ing into the container.
+
+```dotenv
+DEBUG_NGINX_TEMPLATE=true
+```
+
+```bash
+docker compose up nginx
+# logs will include the full rendered config block for each domain
 ```
 
 ### Connect your application containers

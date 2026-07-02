@@ -37,6 +37,16 @@ _create_domain() {
       -e "s|{CONTAINER_URL}|${container_name}:${container_port}|g" \
       "${DOMAIN_TEMPLATE}" > "${dest}"
   echo "Created: ${dest}"
+
+  if [ "${DEBUG_NGINX_TEMPLATE}" = "true" ]; then
+    echo
+    echo "================== cat ${dest} =============================================="
+    cat ${dest}
+    echo "================== end         =============================================="
+    echo
+  fi
+  echo "Done!"
+  sleep 1
 }
 
 
