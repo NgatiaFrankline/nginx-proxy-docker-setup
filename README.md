@@ -43,6 +43,19 @@ Internet → Nginx (80/443) → Docker containers (by name:port)
 
 > `certbot/` and `nginx/conf.d/` are created at runtime — do not commit them.
 
+## Getting started
+
+```bash
+git clone https://github.com/NgatiaFrankline/nginx-proxy-docker-setup.git
+cd nginx-proxy-docker-setup
+```
+
+Create your `.env` file (it is gitignored — never committed):
+
+```bash
+cp .env.example .env   # or create it from scratch — see Configuration below
+```
+
 ## Configuration
 
 Copy `.env` and fill in your values:
