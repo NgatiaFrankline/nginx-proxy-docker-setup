@@ -1,0 +1,157 @@
+# nginx-proxy
+
+A self-contained Docker Compose stack that acts as a reverse proxy for other containers on the same host. It automatically provisions and renews Let's Encrypt TLS certificates via Certbot and generates per-domain Nginx configs from a single environment variable.
+
+## How it works
+
+```
+Internet → Nginx (80/443) → Docker containers (by name:port)
+                ↑
+           Certbot (webroot challenge + cron renewal)
+```
+
+1. **Certbot** starts first, issues certificates for every domain in `PROXY_DOMAINS` using the HTTP-01 webroot challenge, then schedules daily renewal via cron at 2am.
+2. **Nginx** waits for Certbot to pass its healthcheck, then generates an `nginx/conf.d/<domain>.conf` file for each domain, sets up a nightly cron to reload itself at 2am (to pick up renewed certs), and starts serving traffic.
+
+## Project structure
+
+```
+.
+├── docker-compose.yml
+├── .env
+├── docker/
+│   ├── nginx/
+│   │   ├── Dockerfile
+│   │   ├── conf/
+│   │   │   ├── domain-template.conf   # Per-domain Nginx config template
+│   │   │   └── healthcheck.conf       # /healthz stub_status endpoint
+│   │   └── scripts/
+│   │       ├── entrypoint.sh          # Copies healthcheck conf, generates domain configs, starts crond
+│   │       └── create_proxy_domains.sh # Renders domain-template.conf for each PROXY_DOMAINS entry
+│   └── certbot/
+│       ├── Dockerfile
+│       └── scripts/
+│           ├── entrypoint.sh          # Issues certs on startup, schedules daily renewal
+│           ├── create_certs.sh        # Runs certbot certonly per domain (skips existing certs)
+│           └── healthcheck.sh         # Checks certbot binary + certificates dir
+├── certbot/
+│   ├── conf/                          # Let's Encrypt data (mounted into both containers)
+│   └── www/                           # Webroot for ACME challenge (mounted into both containers)
+└── nginx/
+    └── conf.d/                        # Generated per-domain configs (mounted into Nginx)
+```
+
+> `certbot/` and `nginx/conf.d/` are created at runtime — do not commit them.
+
+## Configuration
+
+Copy `.env` and fill in your values:
+
+```dotenv
+PROXY_NAME=proxy
+CERTBOT_EMAIL=you@example.com
+CERTBOT_STAGING=true
+SKIP_CERTBOT=false
+PROXY_DOMAINS=example.com:app:3000,www.example.com:app:3000,api.example.com:api:8080
+```
+
+### Environment variables
+
+| Variable          | Required | Description                                                                                         |
+|-------------------|----------|-----------------------------------------------------------------------------------------------------|
+| `PROXY_NAME`      | yes      | Suffix appended to container names (`nginx-<name>`, `certbot-<name>`).                              |
+| `CERTBOT_EMAIL`   | yes      | Email address for Let's Encrypt account and expiry notices.                                         |
+| `CERTBOT_STAGING` | yes      | `true` to use the Let's Encrypt staging CA (for testing), `false` for production certificates.      |
+| `SKIP_CERTBOT`    | yes      | `true` to skip certificate issuance entirely (useful when testing Nginx config without DNS set up). |
+| `PROXY_DOMAINS`   | yes      | Comma-separated list of `domain:container_name:port` entries (see below).                           |
+
+### `PROXY_DOMAINS` format
+
+```
+PROXY_DOMAINS=<domain>:<container>:<port>[,<domain>:<container>:<port>...]
+```
+
+- `<domain>` — the public hostname (must resolve to this host's IP)
+- `<container>` — the name of the target Docker container on the `proxy-network`
+- `<port>` — the port the target container listens on
+
+Example:
+
+```dotenv
+PROXY_DOMAINS=example.com:frontend:3000,www.example.com:frontend:3000,api.example.com:backend:8080
+```
+
+This generates three Nginx server blocks and requests three Let's Encrypt certificates.
+
+## Usage
+
+### First run (staging)
+
+Start with `CERTBOT_STAGING=true` to verify everything works without hitting Let's Encrypt rate limits:
+
+```bash
+docker compose up -d
+docker compose logs -f
+```
+
+Check that certificates were issued and Nginx is healthy:
+
+```bash
+docker compose ps
+```
+
+### Switch to production certificates
+
+Once staging succeeds, set `CERTBOT_STAGING=false` and delete the staging certs so they are re-issued:
+
+```bash
+# Remove staging certs
+sudo rm -rf ./certbot/conf
+
+# Re-deploy
+docker compose down
+docker compose up -d
+```
+
+### Connect your application containers
+
+Target containers must be on the same `proxy-network`. Add this to their `docker-compose.yml`:
+
+```yaml
+networks:
+  proxy-network:
+    external: true
+    name: <PROXY_NAME>_proxy-network   # e.g. proxy_proxy-network
+```
+
+And assign the network to each service that the proxy should reach.
+
+## Services
+
+### `certbot`
+
+- Image: `certbot/certbot:v5.6.0`
+- Issues a certificate per domain on startup (skips domains that already have a valid cert).
+- Schedules `certbot renew --webroot` daily at 2am via cron.
+- Healthcheck: verifies the certbot binary works and can read the certificates directory.
+
+### `nginx`
+
+- Image: `nginx:1.31.2-alpine`
+- Starts only after `certbot` is healthy (`depends_on: condition: service_healthy`).
+- Generates one `conf.d/<domain>.conf` per entry in `PROXY_DOMAINS` from `domain-template.conf`.
+- Each config: redirects HTTP → HTTPS, terminates TLS, proxies to the target container, and sets standard security headers (`HSTS`, `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`).
+- Schedules `nginx -s reload` daily at 2am to pick up renewed certificates.
+- Healthcheck: `curl http://localhost/healthz` (nginx `stub_status`).
+
+## Volumes
+
+| Host path         | Container path            | Used by           |
+|-------------------|---------------------------|-------------------|
+| `./certbot/conf`  | `/etc/letsencrypt`        | nginx + certbot   |
+| `./certbot/www`   | `/var/www/certbot`        | nginx + certbot   |
+| `./nginx/conf.d`  | `/etc/nginx/conf.d`       | nginx             |
+
+## Networking
+
+Both containers share the `proxy-network` bridge network. Application containers that the proxy routes to must also be attached to this network.
