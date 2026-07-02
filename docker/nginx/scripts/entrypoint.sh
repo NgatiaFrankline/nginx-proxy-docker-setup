@@ -9,6 +9,15 @@ HEALTHZ_CONF="/conf/healthcheck.conf"
 echo
 echo "Nginx proxy starting...."
 
+
+echo
+echo "Removing the previous domains configurations"
+#ls -al "${NGINX_CONFD_DIR}"
+rm -rvf "${NGINX_CONFD_DIR:-?}"*
+echo "Done!"
+sleep 1
+
+
 echo
 echo "Creating healthz check server..."
 if [ -f "${HEALTHZ_CONF}" ]; then
@@ -20,8 +29,11 @@ else
 fi
 
 
-# For domains
+echo
 source /scripts/create_proxy_domains.sh
+echo "Listing dir: ${NGINX_CONFD_DIR}"
+ls -al "${NGINX_CONFD_DIR}"
+echo "Done!"
 
 
 echo

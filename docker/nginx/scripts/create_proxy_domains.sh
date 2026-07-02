@@ -2,7 +2,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 DOMAIN_TEMPLATE="/conf/domain-template.conf"
+DEFAULT_TEMPLATE="/conf/default-template.conf"
 NGINX_CONFD_DIR="/etc/nginx/conf.d/"
+DEFAULT_CONF_DEST="${NGINX_CONFD_DIR}default.conf"
 
 
 echo
@@ -44,6 +46,8 @@ _create_domain() {
   sleep 1
 }
 
+
+echo
 if [ -n "${PROXY_DOMAINS}" ]; then
   IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
   for entry in "${DOMAINS[@]}"; do
@@ -55,6 +59,9 @@ if [ -n "${PROXY_DOMAINS}" ]; then
 else
   echo "Ooops!"
   echo "No domains to create"
+  echo "Configuring a default server to show Nginx is working when no domains are specified."
+  cp -rvf "${DEFAULT_TEMPLATE}" "${DEFAULT_CONF_DEST}"
+  echo "Created: ${DEFAULT_CONF_DEST}"
 fi
 
 
