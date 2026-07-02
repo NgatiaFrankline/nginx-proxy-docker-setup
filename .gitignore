@@ -2,3 +2,4 @@
 /certbot
 .env
 .vscode
+nginx
