@@ -18,28 +18,29 @@ _create_cert() {
   local domain container_name container_port
   IFS=':' read -r domain container_name container_port <<< "${entry}"
 
-  if certbot certificates 2>/dev/null | grep -q "Domains:.*${domain}"; then
-    echo "Certificate for ${domain} already exists, skipping."
-    return 0
-  fi
+  if [ -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+    echo "Ooops!"
+    echo "Certificate for ${domain} already exists"
+    echo "Skipping..."
+  else
+    echo "Requesting certificate for: ${domain}"
+    STAGING_FLAG=""
+    if [ "${CERTBOT_STAGING}" = "true" ]; then
+      STAGING_FLAG="--staging"
+    fi
+    certbot certonly \
+      --webroot \
+      -w /var/www/certbot \
+      --email "${CERTBOT_EMAIL}" \
+      --agree-tos \
+      --no-eff-email \
+      --non-interactive \
+      --cert-name "${domain}" \
+      ${STAGING_FLAG} \
+      -d "${domain}"
 
-  echo "Requesting certificate for: ${domain}"
-  STAGING_FLAG=""
-  if [ "${CERTBOT_STAGING}" = "true" ]; then
-    STAGING_FLAG="--staging"
+    echo "Certificate created for: ${domain}"
   fi
-  certbot certonly \
-    --webroot \
-    -w /var/www/certbot \
-    --email "${CERTBOT_EMAIL}" \
-    --agree-tos \
-    --no-eff-email \
-    --non-interactive \
-    --cert-name "${domain}" \
-    ${STAGING_FLAG} \
-    -d "${domain}"
-
-  echo "Certificate created for: ${domain}"
 }
 
 
