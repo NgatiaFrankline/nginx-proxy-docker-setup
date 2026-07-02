@@ -1,0 +1,62 @@
+x-nginx-image: &nginx-image
+  restart: unless-stopped
+  build:
+    context: ./docker/nginx
+    dockerfile: ./Dockerfile
+    target: nginx
+x-certbot-image: &certbot-image
+  restart: unless-stopped
+  build:
+    context: ./docker/certbot
+    dockerfile: ./Dockerfile
+    target: certbot
+x-certbot-volumes: &certbot-volumes
+  volumes:
+    - ./certbot/conf:/etc/letsencrypt
+    - ./certbot/www:/var/www/certbot
+x-nginx-volumes: &nginx-volumes
+  volumes:
+    - ./certbot/conf:/etc/letsencrypt
+    - ./certbot/www:/var/www/certbot
+    - ./nginx/conf.d:/etc/nginx/conf.d
+x-network: &network
+  networks:
+    - proxy-network
+x-shared-env: &shared-env
+  SKIP_CERTBOT: ${SKIP_CERTBOT} # i.e proxy
+  CERTBOT_EMAIL: ${CERTBOT_EMAIL} # i.e. your email
+  CERTBOT_STAGING: ${CERTBOT_STAGING} # i.e. "true" or "false" (string )
+  PROXY_DOMAINS: ${PROXY_DOMAINS} # i.e. list of domains separated by comma. Exmaple: example.com:container_name:port,www.example.com:container_name:port,test.com:container_name:port,www.test.com:container_name:port
+---
+services:
+  certbot:
+    container_name: certbot-${PROXY_NAME}
+    <<: [*certbot-image,*certbot-volumes,*network]
+    environment:
+      <<: *shared-env
+    healthcheck:
+      test: ["CMD","/bin/bash","/scripts/healthcheck.sh"]
+      interval: 100s
+      timeout: 15s
+      retries: 3
+      start_period: 10s
+  nginx:
+    container_name: nginx-${PROXY_NAME}
+    <<: [*nginx-image,*nginx-volumes,*network]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      <<: *shared-env
+    depends_on:
+      certbot:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL","curl -f http://localhost/healthz"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 10s
+networks:
+  proxy-network:
+    driver: bridge
