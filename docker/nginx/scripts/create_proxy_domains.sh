@@ -2,6 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 DOMAIN_TEMPLATE="/conf/domain-template.conf"
+HTTP_ONLY_TEMPLATE="/conf/http-only-template.conf"
 DEFAULT_TEMPLATE="/conf/default-template.conf"
 NGINX_CONFD_DIR="/etc/nginx/conf.d/"
 DEFAULT_CONF_DEST="${NGINX_CONFD_DIR}default.conf"
@@ -29,10 +30,20 @@ _create_domain() {
   local conf_filename="${domain//./_}.conf"
   local dest="${NGINX_CONFD_DIR}${conf_filename}"
 
+  # Use HTTP-only config if the SSL certificate doesn't exist yet.
+  # Certbot needs nginx on port 80 to complete the ACME challenge; once the
+  # cert is created the cert-watcher will regenerate the config and reload nginx.
+  local cert_file="/etc/letsencrypt/live/${domain}/fullchain.pem"
+  local template="${DOMAIN_TEMPLATE}"
+  if [ ! -f "${cert_file}" ]; then
+    echo "No cert found for ${domain}, using HTTP-only template"
+    template="${HTTP_ONLY_TEMPLATE}"
+  fi
+
   echo "Creating config for domain: ${domain} -> ${container_name}:${container_port}"
   sed -e "s|{MY_DOMAIN}|${domain}|g" \
       -e "s|{CONTAINER_URL}|${container_name}:${container_port}|g" \
-      "${DOMAIN_TEMPLATE}" > "${dest}"
+      "${template}" > "${dest}"
   echo "Created: ${dest}"
 
   if [ "${DEBUG_NGINX_TEMPLATE}" = "true" ]; then

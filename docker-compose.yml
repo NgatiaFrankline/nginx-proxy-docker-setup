@@ -35,6 +35,9 @@ services:
     <<: [*certbot-image,*certbot-volumes,*network]
     environment:
       <<: *shared-env
+    depends_on:
+      nginx:
+        condition: service_healthy
     healthcheck:
       test: ["CMD","/bin/bash","/scripts/healthcheck.sh"]
       interval: 100s
@@ -49,9 +52,6 @@ services:
       - "443:443"
     environment:
       <<: *shared-env
-    depends_on:
-      certbot:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL","curl -f http://localhost/healthz"]
       interval: 30s
