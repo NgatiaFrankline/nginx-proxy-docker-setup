@@ -193,8 +193,8 @@ And assign the network to each service that the proxy should reach.
 ### Content Security Policy
 
 The generated domain config includes a CSP that supports typical WordPress themes
-and plugins: inline scripts/styles, Google Fonts, data-URI fonts, and HTTPS
-assets are allowed. The policy includes `'unsafe-inline'` and `'unsafe-eval'`
+and plugins: inline scripts/styles, Google Fonts, data-URI fonts, blob workers,
+and HTTPS assets are allowed. The policy includes `'unsafe-inline'` and `'unsafe-eval'`
 because many WordPress plugins depend on them. If the application defines its
 own CSP, remove or replace the `Content-Security-Policy` header in
 `docker/nginx/conf/domain-template.conf`; the proxy cannot infer which
