@@ -21,8 +21,32 @@ echo "Template found!"
 sleep 1
 
 
+_validate_domain_entry() {
+  local entry=$1
+  local domain container_name container_port
+  IFS=':' read -r domain container_name container_port <<< "${entry}"
+
+  if [ -z "${domain}" ] || [ -z "${container_name}" ] || [ -z "${container_port}" ]; then
+    echo "Invalid PROXY_DOMAINS entry: ${entry}"
+    return 1
+  fi
+
+  if [[ ! "${domain}" =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    echo "Invalid hostname in PROXY_DOMAINS entry: ${domain}"
+    return 1
+  fi
+
+  if [[ ! "${container_port}" =~ ^[0-9]+$ ]] || (( container_port < 1 || container_port > 65535 )); then
+    echo "Invalid target port in PROXY_DOMAINS entry: ${container_port}"
+    return 1
+  fi
+
+  return 0
+}
+
 _create_domain() {
   entry=$1
+  _validate_domain_entry "${entry}" || return 1
 
   local domain container_name container_port
   IFS=':' read -r domain container_name container_port <<< "${entry}"

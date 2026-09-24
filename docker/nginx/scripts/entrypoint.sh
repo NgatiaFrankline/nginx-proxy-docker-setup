@@ -28,10 +28,13 @@ else
   exit 1
 fi
 
+cat > /etc/nginx/conf.d/limiters.conf <<'EOF'
+limit_req_zone $binary_remote_addr zone=proxy_rate_limit:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
+EOF
 
 echo
-source /scripts/create_proxy_domains.sh
-echo "Listing dir: ${NGINX_CONFD_DIR}"
+source /scripts/create_proxy_domains.shecho "Listing dir: ${NGINX_CONFD_DIR}"
 ls -al "${NGINX_CONFD_DIR}"
 echo "Done!"
 
