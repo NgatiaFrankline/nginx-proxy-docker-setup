@@ -42,11 +42,15 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - CHOWN
     read_only: true
     tmpfs:
       - /tmp
       - /var/cache/nginx
       - /var/run
+      - /etc/crontabs
     healthcheck:
       test: ["CMD","/bin/bash","/scripts/healthcheck.sh"]
       interval: 100s
@@ -65,13 +69,19 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - CHOWN
+      - SETGID
+      - SETUID
     read_only: true
     tmpfs:
       - /tmp
       - /var/cache/nginx
       - /var/run
+      - /etc/crontabs
     healthcheck:
-      test: ["CMD-SHELL","curl -f http://localhost/healthz"]
+      test: ["CMD-SHELL","curl -4 -f http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 15s
       retries: 3

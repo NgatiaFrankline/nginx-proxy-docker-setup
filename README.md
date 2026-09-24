@@ -106,7 +106,7 @@ This stack is hardened by default for a public-facing reverse proxy:
 - TLS is restricted to `TLSv1.2` and `TLSv1.3`.
 - Nginx hides version headers (`server_tokens off`) and adds security headers such as HSTS, CSP, and `Permissions-Policy`.
 - Basic per-IP request throttling and connection limiting are enabled to reduce abuse.
-- The Nginx container runs with `no-new-privileges`, drops all Linux capabilities, and uses a read-only root filesystem.
+- Both containers run with `no-new-privileges`, drop all Linux capabilities except `DAC_OVERRIDE` and `CHOWN` (needed for mounted volumes and Nginx runtime directories), and use a read-only root filesystem.
 - The Nginx container reads the certificate directory as read-only while Certbot keeps write access.
 - Application containers should not expose their own ports publicly; they should only be reachable through the proxy network.
 
