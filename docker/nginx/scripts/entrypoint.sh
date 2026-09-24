@@ -59,11 +59,15 @@ echo "Starting cert-watcher (upgrades HTTP-only configs to HTTPS once Certbot is
       for _entry in "${_DOMAINS[@]}"; do
         _entry="${_entry//[[:space:]]/}"
         [ -z "${_entry}" ] && continue
-        IFS=':' read -r _domain _ _ <<< "${_entry}"
+        IFS=':' read -r _domain _container _port <<< "${_entry}"
         _conf="${NGINX_CONFD_DIR}${_domain//./_}.conf"
         _cert="/etc/letsencrypt/live/${_domain}/fullchain.pem"
-        # If the cert now exists but the config still only has port 80 (no 443), upgrade it
-        if [ -f "${_cert}" ] && [ -f "${_conf}" ] && ! grep -q "listen 443" "${_conf}"; then
+        # Retry domains skipped because the upstream was not resolvable, and
+        # upgrade HTTP-only configs once their certificates are available.
+        if [ ! -f "${_conf}" ] && getent hosts "${_container}" >/dev/null 2>&1; then
+          echo "cert-watcher: upstream ${_container} is now resolvable, creating ${_domain}"
+          NEEDS_RELOAD=true
+        elif [ -f "${_cert}" ] && [ -f "${_conf}" ] && ! grep -q "listen 443" "${_conf}"; then
           echo "cert-watcher: cert found for ${_domain}, upgrading config to HTTPS"
           NEEDS_RELOAD=true
         fi

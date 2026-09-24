@@ -90,6 +90,12 @@ PROXY_DOMAINS=<domain>:<container>:<port>[,<domain>:<container>:<port>...]
 - `<container>` — the name of the target Docker container on the `proxy-network`
 - `<port>` — the port the target container listens on
 
+Before creating a server configuration, Nginx checks that the target container
+name resolves on `proxy-network`. If it does not resolve, that domain is skipped
+with an error while the remaining entries continue to be processed. The
+cert-watcher retries skipped entries every 30 seconds, so the configuration is
+created automatically after the target container becomes resolvable.
+
 Example:
 
 ```dotenv

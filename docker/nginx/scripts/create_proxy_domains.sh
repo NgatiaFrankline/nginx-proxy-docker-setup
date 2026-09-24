@@ -51,6 +51,12 @@ _create_domain() {
   local domain container_name container_port
   IFS=':' read -r domain container_name container_port <<< "${entry}"
 
+  if ! getent hosts "${container_name}" >/dev/null 2>&1; then
+    echo "Unable to resolve upstream container: ${container_name}"
+    echo "Skipping Nginx config for ${domain}; verify that ${container_name} is running and attached to proxy-network."
+    return 0
+  fi
+
   local conf_filename="${domain//./_}.conf"
   local dest="${NGINX_CONFD_DIR}${conf_filename}"
 
@@ -103,4 +109,3 @@ fi
 echo
 echo "Adios muchachos...."
 IFS=$'\n\t'
-
