@@ -98,6 +98,20 @@ PROXY_DOMAINS=example.com:frontend:3000,www.example.com:frontend:3000,api.exampl
 
 This generates three Nginx server blocks and requests three Let's Encrypt certificates.
 
+## Security hardening
+
+This stack is hardened by default for a public-facing reverse proxy:
+
+- Unknown HTTP hosts return `444` and unknown HTTPS handshakes are rejected.
+- TLS is restricted to `TLSv1.2` and `TLSv1.3`.
+- Nginx hides version headers (`server_tokens off`) and adds security headers such as HSTS, CSP, and `Permissions-Policy`.
+- Basic per-IP request throttling and connection limiting are enabled to reduce abuse.
+- The Nginx container runs with `no-new-privileges`, drops all Linux capabilities, and uses a read-only root filesystem.
+- The Nginx container reads the certificate directory as read-only while Certbot keeps write access.
+- Application containers should not expose their own ports publicly; they should only be reachable through the proxy network.
+
+If you want to tune the protection levels, edit the generated Nginx config templates and the rate-limit definitions in `docker/nginx/scripts/entrypoint.sh`.
+
 ## Usage
 
 ### First run (staging)
