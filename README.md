@@ -104,7 +104,7 @@ This stack is hardened by default for a public-facing reverse proxy:
 
 - Unknown HTTP hosts return `444` and unknown HTTPS handshakes are rejected.
 - TLS is restricted to `TLSv1.2` and `TLSv1.3`.
-- Nginx hides version headers (`server_tokens off`) and adds security headers such as HSTS, CSP, and `Permissions-Policy`.
+- Nginx hides version headers (`server_tokens off`) and adds security headers such as HSTS, a WordPress-compatible CSP, and `Permissions-Policy`.
 - Basic per-IP request throttling and connection limiting are enabled to reduce abuse.
 - Both containers run with `no-new-privileges`, drop all Linux capabilities except `DAC_OVERRIDE` and `CHOWN` (needed for mounted volumes and Nginx runtime directories), and use a read-only root filesystem.
 - The Nginx container reads the certificate directory as read-only while Certbot keeps write access.
@@ -182,7 +182,17 @@ And assign the network to each service that the proxy should reach.
 - Image: `nginx:1.31.2-alpine`
 - Starts only after `certbot` is healthy (`depends_on: condition: service_healthy`).
 - Generates one `conf.d/<domain>.conf` per entry in `PROXY_DOMAINS` from `domain-template.conf`.
-- Each config: redirects HTTP → HTTPS, terminates TLS, proxies to the target container, and sets standard security headers (`HSTS`, `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`).
+- Each config: redirects HTTP → HTTPS, terminates TLS, proxies to the target container, and sets standard security headers (`HSTS`, `X-Frame-Options`, `X-Content-Type-Options`, CSP, and `Permissions-Policy`).
+
+### Content Security Policy
+
+The generated domain config includes a CSP that supports typical WordPress themes
+and plugins: inline scripts/styles, Google Fonts, data-URI fonts, and HTTPS
+assets are allowed. The policy includes `'unsafe-inline'` and `'unsafe-eval'`
+because many WordPress plugins depend on them. If the application defines its
+own CSP, remove or replace the `Content-Security-Policy` header in
+`docker/nginx/conf/domain-template.conf`; the proxy cannot infer which
+third-party services a site needs.
 - Schedules `nginx -s reload` daily at 2am to pick up renewed certificates.
 - Healthcheck: `curl http://localhost/healthz` (nginx `stub_status`).
 
