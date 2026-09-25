@@ -108,7 +108,10 @@ This generates three Nginx server blocks and requests three Let's Encrypt certif
 
 This stack is hardened by default for a public-facing reverse proxy:
 
-- Unknown HTTP hosts return `444` and unknown HTTPS handshakes are rejected.
+- Unknown hosts and direct IP requests show the default Nginx page instead of
+  being routed to a configured service. If a configured upstream is down,
+  requests for its domain show a service-unavailable page rather than falling
+  through to another service.
 - TLS is restricted to `TLSv1.2` and `TLSv1.3`.
 - Nginx hides version headers (`server_tokens off`) and adds security headers such as HSTS, a WordPress-compatible CSP, and `Permissions-Policy`.
 - Basic per-IP request throttling and connection limiting are enabled to reduce abuse.

@@ -89,6 +89,10 @@ _create_domain() {
 
 
 echo
+echo "Installing the default server configuration..."
+cp -rvf "${DEFAULT_TEMPLATE}" "${DEFAULT_CONF_DEST}"
+echo "Created: ${DEFAULT_CONF_DEST}"
+
 if [ -n "${PROXY_DOMAINS}" ]; then
   IFS=',' read -ra DOMAINS <<< "${PROXY_DOMAINS}"
   for entry in "${DOMAINS[@]}"; do
@@ -100,9 +104,7 @@ if [ -n "${PROXY_DOMAINS}" ]; then
 else
   echo "Ooops!"
   echo "No domains to create"
-  echo "Configuring a default server to show Nginx is working when no domains are specified."
-  cp -rvf "${DEFAULT_TEMPLATE}" "${DEFAULT_CONF_DEST}"
-  echo "Created: ${DEFAULT_CONF_DEST}"
+  echo "The default server will handle all requests."
 fi
 
 

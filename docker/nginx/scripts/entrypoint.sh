@@ -4,10 +4,22 @@ IFS=$'\n\t'
 DEFAULT_ENTRYPOINT="/docker-entrypoint.sh"
 NGINX_CONFD_DIR="/etc/nginx/conf.d/"
 HEALTHZ_CONF="/conf/healthcheck.conf"
+DEFAULT_CERT="/tmp/nginx-default.crt"
+DEFAULT_KEY="/tmp/nginx-default.key"
 
 
 echo
 echo "Nginx proxy starting...."
+
+echo
+echo "Creating certificate for the default HTTPS server..."
+if [ ! -f "${DEFAULT_CERT}" ] || [ ! -f "${DEFAULT_KEY}" ]; then
+  openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+    -keyout "${DEFAULT_KEY}" \
+    -out "${DEFAULT_CERT}" \
+    -subj "/CN=nginx-default" >/dev/null 2>&1
+fi
+echo "Done!"
 
 
 echo

@@ -8,6 +8,7 @@ COPY conf /conf
 
 RUN set -ex \
     && apk add --no-cache bash \
+    && apk add --no-cache openssl \
     && apk add --no-cache dcron \
     && rm -rf /var/cache/apk/*
 
